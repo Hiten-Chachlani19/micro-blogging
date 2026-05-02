@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Throwable;
 
 class ApiExceptionHandler
@@ -17,6 +18,10 @@ class ApiExceptionHandler
     {
         $exceptions->render(function (ValidationException $e) {
             return ApiResponse::validationError($e->errors());
+        });
+
+        $exceptions->render(function (UnauthorizedHttpException $e) {
+            return ApiResponse::error($e->getMessage(), 401);
         });
 
         $exceptions->render(function (AuthenticationException $e) {
@@ -38,4 +43,3 @@ class ApiExceptionHandler
         });
     }
 }
-
