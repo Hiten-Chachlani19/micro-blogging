@@ -20,9 +20,12 @@ class PostRepository implements PostRepositoryInterface
         return $this->model->find($id);
     }
 
+    private const PAGINATE_RELATIONS = ['author'];
+
     public function paginate(array $filters, ?string $cursor, int $limit): CursorPaginator
     {
         return $this->model
+        ->with(self::PAGINATE_RELATIONS)
             ->whereNull('parent_id')
             ->whereNull('repost_of_id')
             ->orderByDesc('created_at')
