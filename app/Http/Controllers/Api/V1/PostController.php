@@ -40,4 +40,11 @@ class PostController extends Controller
             ],
         );
     }
+
+    public function show(int $id): JsonResponse
+    {
+        $post = $this->posts->findWithDetails($id);
+
+        return ApiResponse::success(new PostResource($post));
+    }
 }

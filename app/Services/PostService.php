@@ -34,4 +34,9 @@ class PostService
     {
         return $this->posts->paginate($filters, $cursor, $limit);
     }
+
+    public function findWithDetails(int $id): Post
+    {
+        return $this->posts->findByIdWithDetails($id);
+    }
 }

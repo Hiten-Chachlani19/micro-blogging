@@ -22,6 +22,9 @@ class PostResource extends JsonResource
                 'handle'       => $this->author->handle,
                 'display_name' => $this->author->display_name,
             ],
+            'parent'        => $this->whenLoaded('parent', fn () => new PostResource($this->parent)),
+            'original_post' => $this->whenLoaded('originalPost', fn () => new PostResource($this->originalPost)),
+            'replies'       => $this->whenLoaded('replies', fn () => PostResource::collection($this->replies)),
             'created_at'    => $this->created_at->toIso8601String(),
             'updated_at'    => $this->updated_at->toIso8601String(),
         ];
