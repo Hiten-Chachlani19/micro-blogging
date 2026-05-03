@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Repositories;
+
+use App\Models\Post;
+use App\Repositories\Contracts\PostRepositoryInterface;
+use Illuminate\Pagination\CursorPaginator;
+
+class PostRepository implements PostRepositoryInterface
+{
+    public function __construct(private readonly Post $model) {}
+
+    public function create(array $data): Post
+    {
+        return $this->model->create($data);
+    }
+
+    public function findById(int $id): ?Post
+    {
+        return $this->model->find($id);
+    }
+
+    public function paginate(array $filters, ?string $cursor, int $limit): CursorPaginator
+    {
+        return $this->model
+            ->whereNull('parent_id')
+            ->whereNull('repost_of_id')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->cursorPaginate($limit, ['*'], 'cursor', $cursor ? \Illuminate\Pagination\Cursor::fromEncoded($cursor) : null);
+    }
+
+    public function update(Post $post, array $data): Post
+    {
+        $post->update($data);
+
+        return $post;
+    }
+
+    public function delete(Post $post): void
+    {
+        $post->delete();
+    }
+}
