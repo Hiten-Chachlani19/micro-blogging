@@ -17,6 +17,11 @@ class PostResource extends JsonResource
             'repost_of_id'  => $this->repost_of_id,
             'like_count'    => $this->like_count,
             'reply_count'   => $this->reply_count,
+            'author'        => [
+                'id'           => $this->author->id,
+                'handle'       => $this->author->handle,
+                'display_name' => $this->author->display_name,
+            ],
             'created_at'    => $this->created_at->toIso8601String(),
             'updated_at'    => $this->updated_at->toIso8601String(),
         ];

@@ -8,6 +8,7 @@ use App\Http\Resources\PostResource;
 use App\Http\Responses\ApiResponse;
 use App\Services\PostService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class PostController extends Controller
 {
@@ -21,5 +22,22 @@ class PostController extends Controller
         );
 
         return ApiResponse::success(new PostResource($post), status: 201);
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $limit  = min((int) $request->query('limit', 20), 100);
+        $cursor = $request->query('cursor');
+
+        $paginator = $this->posts->list([], $cursor ?: null, $limit);
+
+        return ApiResponse::success(
+            PostResource::collection($paginator),
+            meta: [
+                'next_cursor' => $paginator->nextCursor()?->encode(),
+                'prev_cursor' => $paginator->previousCursor()?->encode(),
+                'has_more'    => $paginator->hasMorePages(),
+            ],
+        );
     }
 }

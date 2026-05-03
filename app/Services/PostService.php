@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Post;
 use App\Models\User;
 use App\Repositories\Contracts\PostRepositoryInterface;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\DB;
 
 class PostService
@@ -27,5 +28,10 @@ class PostService
         }
 
         return $post;
+    }
+
+    public function list(array $filters = [], ?string $cursor = null, int $limit = 20): CursorPaginator
+    {
+        return $this->posts->paginate($filters, $cursor, $limit);
     }
 }
