@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Auth\RegisterController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\MeController;
+use App\Http\Controllers\Api\V1\PostController;
 
 Route::prefix('v1')->group(function () {
     Route::get('health', HealthController::class);
@@ -16,6 +17,8 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware('auth.jwt')->group(function () {
         Route::get('me', MeController::class);
+
+        Route::post('posts', [PostController::class, 'store']);
     });
 
 });
