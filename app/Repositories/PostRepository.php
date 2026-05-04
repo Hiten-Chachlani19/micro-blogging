@@ -33,6 +33,16 @@ class PostRepository implements PostRepositoryInterface
             ->cursorPaginate($limit, ['*'], 'cursor', $cursor ? \Illuminate\Pagination\Cursor::fromEncoded($cursor) : null);
     }
 
+    public function paginateReplies(int $parentId, ?string $cursor, int $limit): CursorPaginator
+    {
+        return $this->model
+            ->with(['author'])
+            ->where('parent_id', $parentId)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->cursorPaginate($limit, ['*'], 'cursor', $cursor ? \Illuminate\Pagination\Cursor::fromEncoded($cursor) : null);
+    }
+
     public function findByIdWithDetails(int $id): Post
     {
         return $this->model

@@ -15,6 +15,8 @@ interface PostRepositoryInterface
 
     public function paginate(array $filters, ?string $cursor, int $limit): CursorPaginator;
 
+    public function paginateReplies(int $parentId, ?string $cursor, int $limit): CursorPaginator;
+    
     public function update(Post $post, array $data): Post;
 
     public function delete(Post $post): void;

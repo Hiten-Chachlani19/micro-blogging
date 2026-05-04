@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreatePostRequest;
+use App\Http\Requests\UpdatePostRequest;
 use App\Http\Resources\PostResource;
 use App\Http\Responses\ApiResponse;
 use App\Services\PostService;
@@ -46,5 +47,21 @@ class PostController extends Controller
         $post = $this->posts->findWithDetails($id);
 
         return ApiResponse::success(new PostResource($post));
+    }
+
+    public function update(UpdatePostRequest $request, int $id): JsonResponse
+    {
+        $post = $this->posts->findWithDetails($id);
+        $post = $this->posts->update(auth()->user(), $post, $request->validated());
+
+        return ApiResponse::success(new PostResource($post));
+    }
+
+    public function destroy(int $id): JsonResponse
+    {
+        $post = $this->posts->findWithDetails($id);
+        $this->posts->delete(auth()->user(), $post);
+
+        return ApiResponse::success(null);
     }
 }
