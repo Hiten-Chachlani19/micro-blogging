@@ -22,7 +22,7 @@ Route::prefix('v1')->group(function () {
         Route::get('me', MeController::class);
 
         Route::post('posts', [PostController::class, 'store']);
-        Route::get('posts', [PostController::class, 'index']);
+        
         Route::get('posts/{id}', [PostController::class, 'show']);
         Route::patch('posts/{id}', [PostController::class, 'update']);
         Route::delete('posts/{id}', [PostController::class, 'destroy']);
@@ -36,4 +36,5 @@ Route::prefix('v1')->group(function () {
         Route::delete('posts/{postId}/likes', [LikeController::class, 'destroy']);
     });
 
+    Route::get('posts', [PostController::class, 'index']);
 });

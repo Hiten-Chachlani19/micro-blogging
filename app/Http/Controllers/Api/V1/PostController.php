@@ -8,8 +8,10 @@ use App\Http\Requests\UpdatePostRequest;
 use App\Http\Resources\PostResource;
 use App\Http\Responses\ApiResponse;
 use App\Services\PostService;
+use App\Support\CacheHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class PostController extends Controller
 {
@@ -25,21 +27,30 @@ class PostController extends Controller
         return ApiResponse::success(new PostResource($post), status: 201);
     }
 
-    public function index(Request $request): JsonResponse
+     public function index(Request $request): JsonResponse
     {
         $limit  = min((int) $request->query('limit', 20), 100);
         $cursor = $request->query('cursor');
 
-        $paginator = $this->posts->list([], $cursor ?: null, $limit);
+        $cacheKey = 'posts:list:' . md5(json_encode(array_filter([
+            'cursor' => $cursor,
+            'limit'  => $limit,
+        ])));
 
-        return ApiResponse::success(
-            PostResource::collection($paginator),
-            meta: [
-                'next_cursor' => $paginator->nextCursor()?->encode(),
-                'prev_cursor' => $paginator->previousCursor()?->encode(),
-                'has_more'    => $paginator->hasMorePages(),
-            ],
-        );
+        $cached = CacheHelper::rememberWithLock($cacheKey, Cache::ttl(300), function () use ($cursor, $limit) {
+            $paginator = $this->posts->list([], $cursor ?: null, $limit);
+
+            return [
+                'data' => PostResource::collection($paginator)->resolve(),
+                'meta' => [
+                    'next_cursor' => $paginator->nextCursor()?->encode(),
+                    'prev_cursor' => $paginator->previousCursor()?->encode(),
+                    'has_more'    => $paginator->hasMorePages(),
+                ],
+            ];
+        });
+
+        return ApiResponse::success($cached['data'], meta: $cached['meta']);
     }
 
     public function show(int $id): JsonResponse

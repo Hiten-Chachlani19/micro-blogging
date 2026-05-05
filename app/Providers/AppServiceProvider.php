@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +20,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Cache::macro('ttl', function (int $base): int {
+            $jitter = (int) floor($base * 0.2);
+            return $base + random_int(-$jitter, $jitter);
+        });
     }
 }
