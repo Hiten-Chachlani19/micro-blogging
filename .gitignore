@@ -25,3 +25,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /storage/keys/jwt-private.pem
+
+**/caddy
+frankenphp
+frankenphp-worker.php
