@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Auth\LoginController;
+use App\Http\Controllers\Api\V1\Auth\LogoutController;
 use App\Http\Controllers\Api\V1\Auth\RefreshController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\Auth\RegisterController;
@@ -21,6 +22,7 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('auth.jwt')->group(function () {
+        Route::post('auth/logout', LogoutController::class);
         Route::get('me', MeController::class);
 
         Route::post('posts', [PostController::class, 'store']);
