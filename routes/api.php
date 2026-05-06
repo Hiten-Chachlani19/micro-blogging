@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\ReplyController;
 use App\Http\Controllers\Api\V1\RepostController;
+use App\Http\Controllers\Api\V1\SearchController;
 
 Route::prefix('v1')->group(function () {
     Route::get('health', HealthController::class);
@@ -25,6 +26,7 @@ Route::prefix('v1')->group(function () {
         Route::post('auth/logout', LogoutController::class);
         Route::get('me', MeController::class);
 
+        Route::get('search', [SearchController::class, 'index']);
         Route::post('posts', [PostController::class, 'store']);
         
         Route::get('posts/{id}', [PostController::class, 'show']);
