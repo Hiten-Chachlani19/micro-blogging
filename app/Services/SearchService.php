@@ -7,35 +7,76 @@ use Illuminate\Support\Facades\DB;
 
 class SearchService
 {
+    /**
+     * Search posts using PostgreSQL full-text search with rank+id cursor pagination.
+     *
+     * Returns an array with keys: data (Collection<Post>), next_cursor (?string), has_more (bool).
+     */
     public function search(string $q, ?string $cursor, int $limit): array
     {
-        // Offset-based pagination — simple, but unsafe under concurrent writes.
-        // Used here deliberately to match the "naive" tier of the benchmark.
-        $offset = $cursor ? (int) base64_decode($cursor) : 0;
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return ['data' => collect(), 'next_cursor' => null, 'has_more' => false];
+        }
 
-        $pattern = '%' . addcslashes($q, '%_\\') . '%';
+        $decoded = $cursor ? json_decode(base64_decode($cursor), true) : null;
 
-        // SQLite (used in tests) does not support ILIKE; fall back to LIKE.
-        // SQLite LIKE is case-insensitive for ASCII characters by default.
-        $operator = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
+        // Read the regconfig from config so it stays in sync with the trigger function.
+        // Both must use the same dictionary — mismatched configs produce wrong rankings.
+        $regconfig = config('search.regconfig', 'english');
 
-        $rows = Post::with('author')
-            ->where('body', $operator, $pattern)
-            ->whereNull('deleted_at')
-            ->whereNull('parent_id')
-            ->whereNull('repost_of_id')
-            ->orderByDesc('id')
-            ->offset($offset)
-            ->limit($limit + 1)
-            ->get();
+        $sql = "
+            SELECT posts.id, ts_rank_cd(search_vector, query) AS rank
+            FROM posts, websearch_to_tsquery('{$regconfig}', ?) query
+            WHERE search_vector @@ query
+              AND posts.deleted_at IS NULL
+        ";
 
-        $hasMore = $rows->count() > $limit;
-        $rows    = $rows->take($limit);
+        $bindings = [$q];
 
-        $nextCursor = $hasMore ? base64_encode((string) ($offset + $limit)) : null;
+        if ($decoded) {
+            // Composite cursor: rows strictly after (rank DESC, id DESC)
+            // i.e. rank < last_rank  OR  (rank = last_rank AND id < last_id)
+            $sql .= "
+                AND (
+                    ts_rank_cd(search_vector, query) < ?
+                    OR (ts_rank_cd(search_vector, query) = ? AND posts.id < ?)
+                )
+            ";
+            $bindings[] = $decoded['rank'];
+            $bindings[] = $decoded['rank'];
+            $bindings[] = $decoded['id'];
+        }
+
+        $sql .= ' ORDER BY rank DESC, posts.id DESC LIMIT ?';
+        $bindings[] = $limit + 1;
+
+        $rows     = DB::select($sql, $bindings);
+        $hasMore  = count($rows) > $limit;
+        $rows     = array_slice($rows, 0, $limit);
+
+        if (empty($rows)) {
+            return ['data' => collect(), 'next_cursor' => null, 'has_more' => false];
+        }
+
+        $rankById = collect($rows)->keyBy('id')->map(fn ($r) => $r->rank);
+        $ids      = array_column($rows, 'id');
+
+        // Load Eloquent models with author; re-order to match rank sort.
+        $posts = Post::with('author')
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
+        $ordered = collect($ids)->map(fn ($id) => $posts->get($id))->filter()->values();
+
+        $nextCursor = null;
+        if ($hasMore) {
+            $last       = end($rows);
+            $nextCursor = base64_encode(json_encode(['rank' => $last->rank, 'id' => $last->id]));
+        }
 
         return [
-            'data'        => $rows->values(),
+            'data'        => $ordered,
             'next_cursor' => $nextCursor,
             'has_more'    => $hasMore,
         ];
