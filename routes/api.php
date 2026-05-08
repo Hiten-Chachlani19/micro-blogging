@@ -23,24 +23,35 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('auth.jwt')->group(function () {
-        Route::post('auth/logout', LogoutController::class);
-        Route::get('me', MeController::class);
+        Route::post('auth/logout', LogoutController::class)
+            ->middleware('throttle.bucket:auth,20,0.2,ip');
+        
+        // Read endpoints - generous limit, user_or_ip_scope
+        // cap=300, refill=5/s, scope=user_or_ip
+        Route::middleware('throttle.bucket:read,300,5,user_or_ip')->group(function() {
+            Route::get('me', MeController::class);
+            Route::get('search', [SearchController::class, 'index']);
+            Route::get('posts', [PostController::class, 'index']);
+            Route::get('posts/{id}', [PostController::class, 'show']);
+            Route::get('posts/mentionedUsers/{id}', [PostController::class, 'mentionedUsers']);
+            Route::get('posts/hashtags/{id}', [PostController::class, 'hashtags']);
+            Route::get('posts/{postId}/replies', [ReplyController::class, 'index']);
+        });
 
-        Route::get('search', [SearchController::class, 'index']);
-        Route::post('posts', [PostController::class, 'store']);
-        
-        Route::get('posts/{id}', [PostController::class, 'show']);
-        Route::patch('posts/{id}', [PostController::class, 'update']);
-        Route::delete('posts/{id}', [PostController::class, 'destroy']);
+        // Write endpoints - moderate limit, user scope
+        // cap=60, refill=1/s, scope=user
+        Route::middleware('throttle.bucket:write,60,1,user')->group(function() {
+            Route::post('posts', [PostController::class, 'store']);        
+            Route::patch('posts/{id}', [PostController::class, 'update']);
+            Route::delete('posts/{id}', [PostController::class, 'destroy']);
 
-        Route::get('posts/{postId}/replies', [ReplyController::class, 'index']);
-        Route::post('posts/{postId}/replies', [ReplyController::class, 'store']);
+            Route::post('posts/{postId}/replies', [ReplyController::class, 'store']);
         
-        Route::post('posts/{postId}/repost', [RepostController::class, 'store']);
+            Route::post('posts/{postId}/repost', [RepostController::class, 'store']);
         
-        Route::post('posts/{postId}/likes', [LikeController::class, 'store']);
-        Route::delete('posts/{postId}/likes', [LikeController::class, 'destroy']);
+            Route::post('posts/{postId}/likes', [LikeController::class, 'store']);
+            Route::delete('posts/{postId}/likes', [LikeController::class, 'destroy']);
+        });
+        
     });
-
-    Route::get('posts', [PostController::class, 'index']);
 });
