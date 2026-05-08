@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Http\Resources\PostResource;
+use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
 use App\Services\PostService;
 use App\Support\CacheHelper;
@@ -75,4 +76,21 @@ class PostController extends Controller
 
         return ApiResponse::success(null);
     }
+
+    public function mentionedUsers(int $id): JsonResponse
+    {
+        $post = $this->posts->findWithDetails($id);
+        $mentionedUsers = $post->mentionedUsers;
+        
+        return ApiResponse::success(UserResource::collection($mentionedUsers), status: 200);
+    }
+
+    public function hashtags(int $id): JsonResponse
+    {
+        $post = $this->posts->findWithDetails($id);
+        $hashtags = $post->hashtags;
+        
+        return ApiResponse::success($hashtags, status: 200);
+    }
+
 }

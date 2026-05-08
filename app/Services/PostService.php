@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Enums\Role;
+use App\Models\Hashtag;
 use App\Models\Post;
 use App\Models\User;
 use App\Repositories\Contracts\PostRepositoryInterface;
+use App\Services\Posts\ContentParser;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +15,7 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class PostService
 {
-    public function __construct(private readonly PostRepositoryInterface $posts) {}
+    public function __construct(private readonly PostRepositoryInterface $posts, private readonly ContentParser $parser) {}
 
     public function createPost(User $author, array $data): Post
     {
@@ -30,6 +32,34 @@ class PostService
                 ->increment('reply_count');
         }
 
+        $userHandles = $this->parser->extractMentions($post['body']);
+        if(!empty($userHandles)) {
+            $userIds =  DB::table('users')
+                    ->whereIn('handle', $userHandles)
+                    ->pluck('id');
+
+            DB::table('mentions')->insertOrIgnore(
+                $userIds->map(fn ($userId) => [
+                    'post_id' => $post->id,
+                    'mentioned_user_id' => $userId,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ])->toArray()
+            );
+            
+        }
+                
+        $hashTags = $this->parser->extractHashtags($post['body']);
+        if(!empty($hashTags)) {
+            $hashTagsId = collect($hashTags)
+                        ->map(function($hashtag) {
+                            return Hashtag::firstOrCreate(
+                                ['tag' => strtolower($hashtag)]
+                            )->id;
+                        });
+            $post->hashtags()->syncWithoutDetaching($hashTagsId);
+        }
+        
         return $post;
     }
 

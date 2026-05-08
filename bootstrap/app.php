@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'auth.jwt' => \App\Http\Middleware\JwtAuthenticate::class,
+            'throttle.bucket' => \App\Http\Middleware\TokenBucketRateLimit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
