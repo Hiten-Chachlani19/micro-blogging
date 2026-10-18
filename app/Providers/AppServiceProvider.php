@@ -16,6 +16,17 @@ class AppServiceProvider extends ServiceProvider
         if (!class_exists('Redis')) {
             class_alias(\stdClass::class, 'Redis');
         }
+
+        this->app->bind('redis', function () {
+            return new class {
+                public function connection($name = null) { return $this; }
+                public function connect(...$args) { return true; }
+                public function get(...$args) { return null; }
+                public function set(...$args) { return true; }
+                public function del(...$args) { return true; }
+                public function __call($method, $parameters) { return null; }
+            };
+        });
     }
 
     /**
