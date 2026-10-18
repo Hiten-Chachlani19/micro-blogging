@@ -17,7 +17,7 @@ class AppServiceProvider extends ServiceProvider
             class_alias(\stdClass::class, 'Redis');
         }
 
-        this->app->bind('redis', function () {
+        $this->app->bind('redis', function () {
             return new class {
                 public function connection($name = null) { return $this; }
                 public function connect(...$args) { return true; }
