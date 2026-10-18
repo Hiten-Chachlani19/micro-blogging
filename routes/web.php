@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
 |--------------------------------------------------------------------------
 */
 
-// Home Route
+// Home Check Route
 Route::get('/', function () {
     return response()->json([
         'status' => 'success',
@@ -19,17 +19,31 @@ Route::get('/', function () {
     ]);
 });
 
-// Database Setup Route (Runs Migration & Clears Cache)
-Route::get('/force-migrate-db-setup', function () {
+// ONE-CLICK TOTAL FIX ROUTE
+Route::get('/fix-everything-now', function () {
     try {
-        Artisan::call('migrate:fresh', ['--force' => true]);
+        // 1. Publish Sanctum migrations if missing
+        Artisan::call('vendor:publish', [
+            '--provider' => 'Laravel\Sanctum\SanctumServiceProvider',
+            '--force' => true
+        ]);
+
+        // 2. Run all pending migrations cleanly without dropping users
+        Artisan::call('migrate', ['--force' => true]);
+
+        // 3. Clear all cached configurations and storage caches
         Artisan::call('config:clear');
         Artisan::call('cache:clear');
-        
+        Artisan::call('route:clear');
+
+        // 4. Return current database status
+        $tables = Schema::getTableListing();
+        $userCount = DB::table('users')->count();
+
         return response()->json([
-            'status' => 'SUCCESS',
-            'message' => 'Database Migrated Successfully!',
-            'output' => Artisan::output()
+            'status' => 'SUCCESS! All database tables & tokens configured.',
+            'total_users_in_db' => $userCount,
+            'existing_tables' => $tables
         ]);
     } catch (\Exception $e) {
         return response()->json([
@@ -39,16 +53,13 @@ Route::get('/force-migrate-db-setup', function () {
     }
 });
 
-// Database Debug Route (Checks Tables and User Count)
+// Quick DB Debug Check
 Route::get('/debug-db', function () {
     try {
-        $tables = Schema::getTableListing();
-        $userCount = DB::table('users')->count();
-        
         return response()->json([
             'status' => 'CONNECTED',
-            'tables' => $tables,
-            'users_count' => $userCount
+            'tables' => Schema::getTableListing(),
+            'users_count' => DB::table('users')->count()
         ]);
     } catch (\Exception $e) {
         return response()->json([
