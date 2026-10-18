@@ -21,9 +21,10 @@ return [
 
     'allowed_methods' => ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => array_filter(
-        array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173')))
-    ),
+    'allowed_origins' => [
+    'http://localhost:5173',
+    'https://cms-frontend-sepia.vercel.app',
+],
 
     'allowed_origins_patterns' => [],
 
