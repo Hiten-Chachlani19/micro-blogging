@@ -68,3 +68,38 @@ Route::get('/debug-db', function () {
         ], 500);
     }
 });
+
+Route::get('/test-login-debug', function (Request $request) {
+    try {
+        $email = $request->query('email');
+        $password = $request->query('password');
+
+        if (!$email || !$password) {
+            return response()->json(['error' => 'Please pass ?email=your_email&password=your_password in URL']);
+        }
+
+        // Attempt Auth
+        if (!Auth::attempt(['email' => $email, 'password' => $password])) {
+            return response()->json(['status' => 'INVALID_CREDENTIALS', 'message' => 'Email or Password incorrect.']);
+        }
+
+        $user = Auth::user();
+        
+        // Attempt Token Creation (Sanctum/Passport)
+        $token = method_exists($user, 'createToken') ? $user->createToken('auth_token')->plainTextToken : 'Auth success (No createToken method found on User model)';
+
+        return response()->json([
+            'status' => 'SUCCESS',
+            'user' => $user,
+            'token' => $token
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'CRASH_EXCEPTION',
+            'error_class' => get_class($e),
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ], 500);
+    }
+});
