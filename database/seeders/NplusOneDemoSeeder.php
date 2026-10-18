@@ -12,7 +12,7 @@ class NplusOneDemoSeeder extends Seeder
     {
         $users = User::factory(50)->create();
 
-        Post::factory(2000)
+        Post::factory(20000)
             ->recycle($users)
             ->create();
     }

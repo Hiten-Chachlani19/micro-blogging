@@ -16,6 +16,19 @@ use App\Http\Controllers\Api\V1\SearchController;
 Route::prefix('v1')->group(function () {
     Route::get('health', HealthController::class);
 
+    // Read endpoints - generous limit, user_or_ip_scope
+    // cap=300, refill=5/s, scope=user_or_ip
+    Route::middleware('throttle.bucket:read,300,5,user_or_ip')->group(function() {
+        Route::get('me', MeController::class);
+        Route::get('posts', [PostController::class, 'index']);
+        Route::get('search', [SearchController::class, 'index']);
+        Route::get('posts/{id}', [PostController::class, 'show']);
+        Route::get('posts/mentionedUsers/{id}', [PostController::class, 'mentionedUsers']);
+        Route::get('posts/hashtags/{id}', [PostController::class, 'hashtags']);
+        Route::get('posts/{postId}/replies', [ReplyController::class, 'index']);
+    });
+
+
     Route::prefix('auth')->group(function () {
         Route::post('register', RegisterController::class);
         Route::post('login', LoginController::class);
@@ -26,18 +39,6 @@ Route::prefix('v1')->group(function () {
         Route::post('auth/logout', LogoutController::class)
             ->middleware('throttle.bucket:auth,20,0.2,ip');
         
-        // Read endpoints - generous limit, user_or_ip_scope
-        // cap=300, refill=5/s, scope=user_or_ip
-        Route::middleware('throttle.bucket:read,300,5,user_or_ip')->group(function() {
-            Route::get('me', MeController::class);
-            Route::get('search', [SearchController::class, 'index']);
-            Route::get('posts', [PostController::class, 'index']);
-            Route::get('posts/{id}', [PostController::class, 'show']);
-            Route::get('posts/mentionedUsers/{id}', [PostController::class, 'mentionedUsers']);
-            Route::get('posts/hashtags/{id}', [PostController::class, 'hashtags']);
-            Route::get('posts/{postId}/replies', [ReplyController::class, 'index']);
-        });
-
         // Write endpoints - moderate limit, user scope
         // cap=60, refill=1/s, scope=user
         Route::middleware('throttle.bucket:write,60,1,user')->group(function() {

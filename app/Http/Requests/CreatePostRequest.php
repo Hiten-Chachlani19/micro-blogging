@@ -15,7 +15,7 @@ class CreatePostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'body'         => ['required', 'string', 'max:280'],
+            'body'         => ['required', 'string', 'max:2800'],
             'parent_id'    => ['nullable', 'integer', 'exists:posts,id'],
             'repost_of_id' => [
                 'nullable',

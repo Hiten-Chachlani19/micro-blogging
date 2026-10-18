@@ -15,7 +15,7 @@ class PostFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'body'    => fake()->text(280),
+            'body'    => fake()->text(random_int(2000, 2800)),
         ];
     }
 
