@@ -131,4 +131,13 @@ return [
         'table' => 'migrations',
         'update_date_on_publish' => true,
     ],
+
+        'redis' => [
+        'client' => env('REDIS_CLIENT', 'mock'),
+        'options' => [
+            'cluster' => env('REDIS_CLUSTER', 'mock'),
+        ],
+        'default' => [],
+        'cache' => [],
+    ],
 ];
