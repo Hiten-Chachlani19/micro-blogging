@@ -4,8 +4,8 @@ WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --no-progress --no-scripts --prefer-dist
 
-# Stage 2: Final Runtime
-FROM php:8.2-fpm
+# Stage 2: Final Runtime (Updated to PHP 8.3)
+FROM php:8.3-fpm
 WORKDIR /var/www
 
 # Install PHP extensions
@@ -21,7 +21,7 @@ COPY --from=build-stage /usr/bin/composer /usr/bin/composer
 # Copy project files
 COPY . .
 
-# Create required Laravel system folders (agar git ignored hon)
+# Create required Laravel directories
 RUN mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views storage/framework/cache
 
 # Generate autoloader ignoring scripts
