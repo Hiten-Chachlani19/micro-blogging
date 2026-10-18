@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
@@ -69,6 +71,9 @@ Route::get('/debug-db', function () {
     }
 });
 
+
+
+// DIRECT TEST LOGIN ROUTE - Catch exact token error
 Route::get('/test-login-debug', function (Request $request) {
     try {
         $email = $request->query('email');
@@ -78,15 +83,26 @@ Route::get('/test-login-debug', function (Request $request) {
             return response()->json(['error' => 'Please pass ?email=your_email&password=your_password in URL']);
         }
 
-        // Attempt Auth
-        if (!Auth::attempt(['email' => $email, 'password' => $password])) {
-            return response()->json(['status' => 'INVALID_CREDENTIALS', 'message' => 'Email or Password incorrect.']);
+        // 1. Check if user exists
+        $user = \App\Models\User::where('email', $email)->first();
+        if (!$user) {
+            return response()->json(['status' => 'USER_NOT_FOUND', 'message' => 'No user exists with this email.']);
         }
 
-        $user = Auth::user();
-        
-        // Attempt Token Creation (Sanctum/Passport)
-        $token = method_exists($user, 'createToken') ? $user->createToken('auth_token')->plainTextToken : 'Auth success (No createToken method found on User model)';
+        // 2. Attempt Auth
+        if (!Auth::attempt(['email' => $email, 'password' => $password])) {
+            return response()->json(['status' => 'INVALID_CREDENTIALS', 'message' => 'Password does not match.']);
+        }
+
+        // 3. Attempt Sanctum Token Creation
+        if (!method_exists($user, 'createToken')) {
+            return response()->json([
+                'status' => 'MISSING_SANCTUM_TRAIT',
+                'message' => 'User model is missing HasApiTokens trait! Add "use Laravel\Sanctum\HasApiTokens;" inside User.php'
+            ]);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'status' => 'SUCCESS',
