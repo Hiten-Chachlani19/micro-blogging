@@ -1,20 +1,34 @@
 FROM php:8.2-fpm
 
-# Install system dependencies & PHP extensions
+# System dependencies aur required PHP extensions install karo
 RUN apt-get update && apt-get install -y \
-    git zip unzip curl libpng-dev libonig-dev libxml2-dev libpq-dev \
-    && docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath gd
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libpq-dev \
+    libzip-dev \
+    zip \
+    unzip \
+    && docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath gd zip
 
-# Get latest Composer
+# Composer ko latest image se copy karo
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
+# Pehle dependencies copy aur install karo (Memory issue aur cache optimization ke liye)
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+
+# Baaki project code copy karo
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader
+# Final autoloader generate karo
+RUN composer dump-autoload --optimize
 
-# Set permissions
+# Storage permissions set karo
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
 EXPOSE 8000
