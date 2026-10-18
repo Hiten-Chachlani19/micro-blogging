@@ -119,3 +119,30 @@ Route::get('/test-login-debug', function (Request $request) {
         ], 500);
     }
 });
+
+config(['cache.default' => 'file']);
+config(['session.driver' => 'file']);
+config(['queue.default' => 'sync']);
+
+Route::get('/', function () {
+    return response()->json(['status' => 'API Active']);
+});
+
+// Force Clear All Config & Cache
+Route::get('/clear-redis-config', function () {
+    try {
+        Artisan::call('config:clear');
+        Artisan::call('cache:clear');
+        Artisan::call('route:clear');
+        
+        return response()->json([
+            'status' => 'SUCCESS',
+            'message' => 'Redis configurations bypassed and all caches cleared!'
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'ERROR',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
